@@ -3,17 +3,17 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+DATA_DIR = BASE_DIR / "data"
+
 CHROMA_DB_PATH = os.getenv(
     "CHROMA_DB_PATH",
-    str(BASE_DIR / "data" / "chroma")
+    str(DATA_DIR / "chroma")
 )
 
-DATA_DIR = BASE_DIR / "data"
 
 MODEL = "gemini-2.5-flash"
 VIDEO_FPS = 5.0
 
-CHROMA_DB_PATH = str(DATA_DIR / "chroma")
 
 COLLECTION_NAME = "watchwise_events"
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
