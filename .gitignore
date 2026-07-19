@@ -7,5 +7,5 @@ data/uploads/
 __pycache__/
 
 *.pyc
-
+data/samplevideos/
 scripts/

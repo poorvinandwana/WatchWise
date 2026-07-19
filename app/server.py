@@ -1,120 +1,127 @@
-import os
-import shutil
-import tempfile
+from fastapi import FastAPI
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+app = FastAPI()
 
-from . import core
+@app.get("/")
+def home():
+    return {"status": "ok"}
+# import os
+# import shutil
+# import tempfile
 
-import logging
+# from fastapi import FastAPI, File, HTTPException, UploadFile
+# from fastapi.staticfiles import StaticFiles
+# from pydantic import BaseModel
 
-logger = logging.getLogger(__name__)
+# from . import core
 
+# import logging
 
-app = FastAPI(title="WatchWise")
-
-# Loaded once on first use, not per-request — the embedding model and Chroma
-# connection are relatively expensive to set up.
-_genai_client = None
-_embedder = None
-_collection = None
+# logger = logging.getLogger(__name__)
 
 
-def get_clients():
-    global _genai_client, _embedder, _collection
+# app = FastAPI(title="WatchWise")
 
-    print("STEP 2: get_clients()", flush=True)
-
-    if _embedder is None:
-        print("STEP 3: loading embedder", flush=True)
-        _embedder = core.get_embedder()
-
-        print("STEP 4: loading collection", flush=True)
-        _collection = core.get_collection()
-
-    print("STEP 5: clients ready", flush=True)
-    return _embedder, _collection
-
-def get_genai_client():
-    global _genai_client
-    if _genai_client is None:
-        _genai_client = core.get_genai_client()
-    return _genai_client
+# # Loaded once on first use, not per-request — the embedding model and Chroma
+# # connection are relatively expensive to set up.
+# _genai_client = None
+# _embedder = None
+# _collection = None
 
 
-class QueryRequest(BaseModel):
-    question: str
-    suspicious_only: bool = False
+# def get_clients():
+#     global _genai_client, _embedder, _collection
+
+#     print("STEP 2: get_clients()", flush=True)
+
+#     if _embedder is None:
+#         print("STEP 3: loading embedder", flush=True)
+#         _embedder = core.get_embedder()
+
+#         print("STEP 4: loading collection", flush=True)
+#         _collection = core.get_collection()
+
+#     print("STEP 5: clients ready", flush=True)
+#     return _embedder, _collection
+
+# def get_genai_client():
+#     global _genai_client
+#     if _genai_client is None:
+#         _genai_client = core.get_genai_client()
+#     return _genai_client
 
 
-@app.post("/api/ingest")
-async def ingest(file: UploadFile = File(...)):
-    embedder, collection = get_clients()
-    genai_client = get_genai_client()
-
-    suffix = os.path.splitext(file.filename)[1] or ".mp4"
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        tmp_path = tmp.name
-
-    try:
-        result = core.ingest_clip(
-            genai_client, embedder, collection, tmp_path, display_filename=file.filename
-        )
-    except Exception as exc:
-        logger.exception("Ingestion failed")
-        raise HTTPException(
-            status_code=500,
-            detail="Video processing failed."
-        )
-    finally:
-        os.remove(tmp_path)
-
-    return result
+# class QueryRequest(BaseModel):
+#     question: str
+#     suspicious_only: bool = False
 
 
-@app.get("/api/events")
-async def list_events():
-    _, collection = get_clients()
-    data = collection.get()
-    events = []
-    for i, meta in enumerate(data["metadatas"]):
-        events.append({**meta, "description": data["documents"][i]})
-    events.sort(key=lambda e: e["ingestion_timestamp"], reverse=True)
-    return events
+# @app.post("/api/ingest")
+# async def ingest(file: UploadFile = File(...)):
+#     embedder, collection = get_clients()
+#     genai_client = get_genai_client()
 
-@app.get("/api/status")
-async def status():
-    _, collection = get_clients()
+#     suffix = os.path.splitext(file.filename)[1] or ".mp4"
+#     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+#         shutil.copyfileobj(file.file, tmp)
+#         tmp_path = tmp.name
 
-    return {
-        "indexed": collection.count() > 0,
-        "event_count": collection.count(),
-    }
+#     try:
+#         result = core.ingest_clip(
+#             genai_client, embedder, collection, tmp_path, display_filename=file.filename
+#         )
+#     except Exception as exc:
+#         logger.exception("Ingestion failed")
+#         raise HTTPException(
+#             status_code=500,
+#             detail="Video processing failed."
+#         )
+#     finally:
+#         os.remove(tmp_path)
 
-@app.post("/api/query")
-async def query(req: QueryRequest):
-    embedder, collection = get_clients()
-    try:
-        result = core.query_events(embedder, collection, req.question, suspicious_only=req.suspicious_only)
-    except Exception as exc:
-        logger.exception("Query failed")
-        raise HTTPException(
-            status_code=500,
-            detail="Query failed."
-        )
-    return result
+#     return result
 
 
-# Serve the frontend. Must be mounted last so it doesn't shadow the /api routes above.
-from pathlib import Path
+# @app.get("/api/events")
+# async def list_events():
+#     _, collection = get_clients()
+#     data = collection.get()
+#     events = []
+#     for i, meta in enumerate(data["metadatas"]):
+#         events.append({**meta, "description": data["documents"][i]})
+#     events.sort(key=lambda e: e["ingestion_timestamp"], reverse=True)
+#     return events
 
-STATIC_DIR = Path(__file__).parent / "static"
+# @app.get("/api/status")
+# async def status():
+#     _, collection = get_clients()
 
-app.mount(
-    "/",
-    StaticFiles(directory=str(STATIC_DIR), html=True),
-    name="static",
-)
+#     return {
+#         "indexed": collection.count() > 0,
+#         "event_count": collection.count(),
+#     }
+
+# @app.post("/api/query")
+# async def query(req: QueryRequest):
+#     embedder, collection = get_clients()
+#     try:
+#         result = core.query_events(embedder, collection, req.question, suspicious_only=req.suspicious_only)
+#     except Exception as exc:
+#         logger.exception("Query failed")
+#         raise HTTPException(
+#             status_code=500,
+#             detail="Query failed."
+#         )
+#     return result
+
+
+# # Serve the frontend. Must be mounted last so it doesn't shadow the /api routes above.
+# from pathlib import Path
+
+# STATIC_DIR = Path(__file__).parent / "static"
+
+# app.mount(
+#     "/",
+#     StaticFiles(directory=str(STATIC_DIR), html=True),
+#     name="static",
+# )
