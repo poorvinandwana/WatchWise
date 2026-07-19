@@ -78,6 +78,14 @@ async def list_events():
     events.sort(key=lambda e: e["ingestion_timestamp"], reverse=True)
     return events
 
+@app.get("/api/status")
+async def status():
+    _, collection = get_clients()
+
+    return {
+        "indexed": collection.count() > 0,
+        "event_count": collection.count(),
+    }
 
 @app.post("/api/query")
 async def query(req: QueryRequest):
@@ -85,10 +93,10 @@ async def query(req: QueryRequest):
     try:
         result = core.query_events(embedder, collection, req.question, suspicious_only=req.suspicious_only)
     except Exception as exc:
-        logger.exception("Ingestion failed")
+        logger.exception("Query failed")
         raise HTTPException(
             status_code=500,
-            detail="Video processing failed."
+            detail="Query failed."
         )
     return result
 

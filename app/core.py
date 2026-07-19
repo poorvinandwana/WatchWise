@@ -211,7 +211,14 @@ def query_events(embedder, collection, question: str, suspicious_only: bool = Fa
     )
 
     if not results["documents"][0]:
-        return {"answer": "No matching events found in the event log.", "sources": []}
+        return {
+            "answer": (
+                "No events are currently indexed.\n\n"
+                "This usually means the server has just started or the event database is empty. "
+                "Please upload and analyze a video first, then try your question again."
+            ),
+            "sources": [],
+        }
 
     context, metas = format_context(results)
 
@@ -219,7 +226,17 @@ def query_events(embedder, collection, question: str, suspicious_only: bool = Fa
     response = groq_client.chat.completions.create(
         model=GROQ_MODEL,
         messages=[
-            {"role": "user", "content": SYNTHESIS_PROMPT_TEMPLATE.format(context=context, question=question)}
+            {
+                "role": "user",
+                "content": SYNTHESIS_PROMPT_TEMPLATE.format(
+                    context=context,
+                    question=question,
+                ),
+            }
         ],
     )
-    return {"answer": response.choices[0].message.content, "sources": metas}
+
+    return {
+        "answer": response.choices[0].message.content,
+        "sources": metas,
+    }
