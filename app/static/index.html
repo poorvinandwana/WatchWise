@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WatchWise — Event Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #14181C;
+    --panel: #1B2025;
+    --panel-raised: #21272D;
+    --line: #2A3138;
+    --text: #E8EDF0;
+    --muted: #8A96A3;
+    --accent: #4FD1C5;
+    --suspicious: #E8543D;
+    --caution: #E8A33D;
+    --clear: #6BA37A;
+    --radius: 6px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 22px 28px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .wordmark {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.02em;
+  }
+
+  .rec-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--suspicious);
+    display: inline-block;
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 1px;
+    background: var(--line);
+  }
+
+  @media (max-width: 880px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .col {
+    background: var(--bg);
+    padding: 24px 28px;
+    min-height: calc(100vh - 73px);
+  }
+
+  h2.section-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin: 0 0 16px 0;
+  }
+
+  /* Dropzone */
+  .dropzone {
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    margin-bottom: 22px;
+  }
+
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--accent);
+    background: rgba(79, 209, 197, 0.05);
+  }
+
+  .dropzone input { display: none; }
+
+  .ingest-status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    min-height: 16px;
+  }
+
+  /* Event cards */
+  .event-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .event-card {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px 16px;
+  }
+
+  .event-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .event-filename {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .event-timestamp {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .badge {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  .badge.suspicious {
+    color: var(--suspicious);
+    border: 1.5px solid var(--suspicious);
+    transform: rotate(-2deg);
+  }
+
+  .badge.not-suspicious {
+    color: var(--clear);
+    border: 1px solid var(--clear);
+  }
+
+  .badge.insufficient {
+    color: var(--caution);
+    border: 1px solid var(--caution);
+  }
+
+  .event-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+
+  .event-desc {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #C4CDD4;
+      max-height: 4.5em;
+      overflow: hidden;
+  }
+
+  .event-desc h1,
+  .event-desc h2,
+  .event-desc h3 {
+      margin: 12px 0 8px;
+      color: var(--text);
+  }
+
+  .event-desc p {
+      margin: 8px 0;
+  }
+
+  .event-desc ul {
+      margin: 8px 0;
+      padding-left: 20px;
+  }
+
+  .event-desc li {
+      margin: 4px 0;
+  }
+
+  .event-desc strong {
+      color: var(--text);
+  }
+
+  .event-card.expanded .event-desc {
+      max-height: none;
+  }
+  .expand-toggle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    cursor: pointer;
+    margin-top: 6px;
+    display: inline-block;
+  }
+
+  .empty-state {
+    color: var(--muted);
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 20px 0;
+  }
+
+  /* Query console */
+  .query-box textarea {
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    padding: 12px 14px;
+    resize: vertical;
+    min-height: 70px;
+  }
+
+  .query-box textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .query-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 20px;
+  }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    cursor: pointer;
+  }
+
+  button.ask-btn {
+    background: var(--accent);
+    color: #0E1316;
+    border: none;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 9px 18px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    letter-spacing: 0.02em;
+  }
+
+  button.ask-btn:hover { opacity: 0.88; }
+  button.ask-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  button.ask-btn:focus-visible,
+  .dropzone:focus-visible,
+  input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .answer-panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+
+  .answer-panel.placeholder {
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    white-space: normal;
+  }
+
+  .sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+  }
+
+  .source-chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 3px 8px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rec-dot { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="rec-dot"></span>
+  <span class="wordmark">WATCHWISE</span>
+  <span class="subtitle">event log &amp; investigation console</span>
+</div>
+
+<div class="layout">
+
+  <div class="col">
+    <h2 class="section-title">Ingest</h2>
+    <label class="dropzone" id="dropzone" tabindex="0">
+      <input type="file" id="fileInput" accept="video/*" />
+      Drop a clip here, or click to choose a file
+    </label>
+    <div class="ingest-status" id="ingestStatus"></div>
+
+    <h2 class="section-title">Event Log</h2>
+    <div class="event-list" id="eventList">
+      <div class="empty-state">No events ingested yet.</div>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2 class="section-title">Ask the Log</h2>
+    <div class="query-box">
+      <textarea id="questionInput" placeholder="e.g. did anyone take something without paying?"></textarea>
+      <div class="query-controls">
+        <label class="toggle-label">
+          <input type="checkbox" id="suspiciousOnly" />
+          suspicious events only
+        </label>
+        <button class="ask-btn" id="askBtn">Ask</button>
+      </div>
+    </div>
+    <div class="answer-panel placeholder" id="answerPanel">
+      Answers will cite the specific clip(s) they're drawn from. If a source description itself was uncertain, the answer will reflect that instead of stating it as fact.
+    </div>
+    <div class="sources" id="sourcesList"></div>
+  </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const ingestStatus = document.getElementById('ingestStatus');
+const eventList = document.getElementById('eventList');
+const questionInput = document.getElementById('questionInput');
+const suspiciousOnly = document.getElementById('suspiciousOnly');
+const askBtn = document.getElementById('askBtn');
+const answerPanel = document.getElementById('answerPanel');
+const sourcesList = document.getElementById('sourcesList');
+
+function badgeClass(classification) {
+  if (classification === 'Suspicious') return 'suspicious';
+  if (classification === 'Not Suspicious') return 'not-suspicious';
+  return 'insufficient';
+}
+
+function formatTimestamp(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString();
+  } catch (e) {
+    return iso;
+  }
+}
+
+function renderEvents(events) {
+  if (!events.length) {
+    eventList.innerHTML = '<div class="empty-state">No events ingested yet.</div>';
+    return;
+  }
+  eventList.innerHTML = events.map(ev => `
+    <div class="event-card">
+      <div class="event-head">
+        <div>
+          <div class="event-filename">${ev.source_filename}</div>
+          <div class="event-timestamp">${formatTimestamp(ev.ingestion_timestamp)}</div>
+        </div>
+        <span class="badge ${badgeClass(ev.classification)}">${ev.classification}</span>
+      </div>
+      <div class="event-meta">confidence: ${ev.confidence}${ev.has_hedge ? ' · contains uncertain language' : ''}</div>
+      <div class="event-desc">${marked.parse(ev.description)}</div>
+      <span class="expand-toggle" onclick="this.parentElement.classList.toggle('expanded'); this.textContent = this.parentElement.classList.contains('expanded') ? 'show less' : 'show more'">show more</span>
+    </div>
+  `).join('');
+}
+
+async function loadEvents() {
+  try {
+    const res = await fetch('/api/events');
+    const events = await res.json();
+    renderEvents(events);
+  } catch (e) {
+    eventList.innerHTML = '<div class="empty-state">Could not reach the server.</div>';
+  }
+}
+
+async function handleFile(file) {
+  if (!file) return;
+  ingestStatus.textContent = `Processing ${file.name}... this can take a minute.`;
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    const res = await fetch('/api/ingest', { method: 'POST', body: formData });
+    if (!res.ok) {
+      const err = await res.json();
+      ingestStatus.textContent = `Failed: ${err.detail || 'unknown error'}`;
+      return;
+    }
+    const result = await res.json();
+    ingestStatus.textContent = `Stored ${result.source_filename} — ${result.classification} (${result.confidence} confidence)`;
+    loadEvents();
+  } catch (e) {
+    ingestStatus.textContent = 'Failed: could not reach the server.';
+  }
+}
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('keydown', (e) => { if (e.key === 'Enter') fileInput.click(); });
+fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+['dragover', 'dragleave', 'drop'].forEach(evt => {
+  dropzone.addEventListener(evt, (e) => {
+    e.preventDefault();
+    dropzone.classList.toggle('dragover', evt === 'dragover');
+  });
+});
+dropzone.addEventListener('drop', (e) => handleFile(e.dataTransfer.files[0]));
+
+async function askQuestion() {
+  const question = questionInput.value.trim();
+  if (!question) return;
+  askBtn.disabled = true;
+  answerPanel.classList.add('placeholder');
+  answerPanel.textContent = 'Searching the event log...';
+  sourcesList.innerHTML = '';
+  try {
+    const res = await fetch('/api/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, suspicious_only: suspiciousOnly.checked })
+    });
+    const result = await res.json();
+    answerPanel.classList.remove('placeholder');
+    answerPanel.innerHTML = marked.parse(result.answer);
+    sourcesList.innerHTML = (result.sources || []).map(s =>
+      `<span class="source-chip">${s.source_filename} · ${s.classification}</span>`
+    ).join('');
+  } catch (e) {
+    answerPanel.textContent = 'Could not reach the server.';
+  } finally {
+    askBtn.disabled = false;
+  }
+}
+
+askBtn.addEventListener('click', askQuestion);
+questionInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) askQuestion();
+});
+
+loadEvents();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,11 @@
+.env
+
+data/chroma/
+
+data/uploads/
+
+__pycache__/
+
+*.pyc
+
+scripts/
