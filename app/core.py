@@ -4,7 +4,7 @@ import os
 import time
 import uuid
 from datetime import datetime, timezone
-
+from fastapi import FastAPI, File, HTTPException, UploadFile
 import chromadb
 from google import genai
 from google.genai import types
@@ -74,7 +74,18 @@ Retrieved events:
 Question: {question}
 
 Answer:"""
+import logging
 
+logging.basicConfig(level=logging.INFO)
+
+print("=== IMPORTED SERVER.PY ===", flush=True)
+
+app = FastAPI(title="WatchWise")
+
+
+@app.on_event("startup")
+async def startup():
+    print("=== FASTAPI STARTUP ===", flush=True)
 
 def contains_hedge_language(text: str) -> bool:
     lowered = text.lower()

@@ -24,11 +24,18 @@ _collection = None
 
 def get_clients():
     global _genai_client, _embedder, _collection
-    if _embedder is None:
-        _embedder = core.get_embedder()
-        _collection = core.get_collection()
-    return _embedder, _collection
 
+    print("STEP 2: get_clients()", flush=True)
+
+    if _embedder is None:
+        print("STEP 3: loading embedder", flush=True)
+        _embedder = core.get_embedder()
+
+        print("STEP 4: loading collection", flush=True)
+        _collection = core.get_collection()
+
+    print("STEP 5: clients ready", flush=True)
+    return _embedder, _collection
 
 def get_genai_client():
     global _genai_client
