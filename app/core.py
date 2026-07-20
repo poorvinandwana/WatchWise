@@ -8,7 +8,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 import chromadb
 from google import genai
 from google.genai import types
-from sentence_transformers import SentenceTransformer
+SentenceTransformer = None
 from groq import Groq
 
 from .config import (
@@ -112,9 +112,16 @@ def get_genai_client():
         raise RuntimeError("GEMINI_API_KEY environment variable is not set.")
     return genai.Client(api_key=api_key)
 
+_embedder = None
 
 def get_embedder():
-    return SentenceTransformer(EMBEDDING_MODEL)
+    global _embedder
+
+    if _embedder is None:
+        from sentence_transformers import SentenceTransformer
+        _embedder = SentenceTransformer(EMBEDDING_MODEL)
+
+    return _embedder
 
 
 def get_collection():
