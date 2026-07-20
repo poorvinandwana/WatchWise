@@ -118,11 +118,17 @@ def get_embedder():
     global _embedder
 
     if _embedder is None:
+        print(">>> get_embedder(): importing SentenceTransformer", flush=True)
         from sentence_transformers import SentenceTransformer
+
+        print(">>> get_embedder(): import complete", flush=True)
+
+        print(f">>> get_embedder(): loading {EMBEDDING_MODEL}", flush=True)
         _embedder = SentenceTransformer(EMBEDDING_MODEL)
 
-    return _embedder
+        print(">>> get_embedder(): model loaded", flush=True)
 
+    return _embedder
 
 def get_collection():
     chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
